@@ -194,7 +194,7 @@ class Commands:
 # callback handler and then only cares about the command type it receives
 # to dispatch any messages accordingly
 class MessageTopics:
-    DEVICE_PRODUCT_ID: str = 'PLAF203'
+    DEVICE_PRODUCT_ID: str = 'PLAF103'
 
     def __init__(self, device_serial_number: str):
         self.device_serial_number: str = device_serial_number
@@ -3911,9 +3911,9 @@ class HomeAssistantDiscoveryMqtt:
 
     def _device_info_get(self):
         return {
-            'identifiers': 'plaf203',
+            'identifiers': 'plaf103',
             'name': 'Pet libro cat feeder',
-            'model': 'PLAF203',
+            'model': 'PLAF103',
             'manufacturer': 'Pet libro',
             'sw_version': 'unknown',
             'serial_number': self.serial_number,
@@ -3924,31 +3924,31 @@ class HomeAssistantDiscoveryMqtt:
         self.mqtt.mqtt_publish(topic, payload_json, namespace = "mqtt", retain = True)
 
     def _config_unique_id_get(self, type_: str, name: str):
-        return "plaf203_{}_{}_{}".format(self.serial_number, type_, name)
+        return "plaf103_{}_{}_{}".format(self.serial_number, type_, name)
 
     def _device_base_path_get(self, topic: str):
-        return "plaf203/{}/{}".format(self.serial_number, topic)
+        return "plaf103/{}/{}".format(self.serial_number, topic)
 
     def _ha_config_topic_base_path_get(self, component: str, name: str):
-        return "homeassistant/{}/plaf203/{}/config".format(component, name)
+        return "homeassistant/{}/plaf103/{}/config".format(component, name)
 
 ########################################################################################################################
 
 # Store in a dedicated namespace that is written to disk
 # Make sure this is configured in your appdaemon.yaml under the appdaemon parent like follows:
 #  namespaces:
-#    plaf203:
+#    plaf103:
 #      writeback: safe
 
 class Storage:
     def __init__(self, ad: adapi.ADAPI, namespace: str, serial_number: str):
         self.ad: adapi.ADAPI = ad
         self.namespace: str = namespace
-        self.food_manual_feed_grain_num_entity_id: str = 'sensor.plaf203_{}_food_manual_feed_grain_num'.format(serial_number)
-        self.food_plans_entity_id: str = 'text.plaf203_{}_food_plans'.format(serial_number)
+        self.food_manual_feed_grain_num_entity_id: str = 'sensor.plaf103_{}_food_manual_feed_grain_num'.format(serial_number)
+        self.food_plans_entity_id: str = 'text.plaf103_{}_food_plans'.format(serial_number)
 
     def initialize(self):
-        self.ad.set_namespace('plaf203')
+        self.ad.set_namespace('plaf103')
 
         if not self._entity_state_exists(self.food_manual_feed_grain_num_entity_id):
             self._entity_state_int_set(self.food_manual_feed_grain_num_entity_id, 1)
@@ -3973,31 +3973,31 @@ class Storage:
         self._entity_state_dict_set(self.food_plans_entity_id, food_plans.to_dict())
 
     def _entity_state_exists(self, name: str) -> bool:
-        return not self.ad.get_state(name, namespace = 'plaf203') == None
+        return not self.ad.get_state(name, namespace = 'plaf103') == None
 
     def _entity_state_dict_get(self, name: str) -> dict:
-        json_str = self.ad.get_state(name, namespace = 'plaf203')
+        json_str = self.ad.get_state(name, namespace = 'plaf103')
         return json.loads(json_str)
 
     def _entity_state_int_get(self, name: str) -> str:
-        return self.ad.get_state(name, namespace = 'plaf203')
+        return self.ad.get_state(name, namespace = 'plaf103')
 
     def _entity_state_dict_set(self, name: str, state: dict):
         json_str = json.dumps(state)
         self.ad.set_state(
             name,
             state = json_str,
-            namespace = 'plaf203')
+            namespace = 'plaf103')
 
     def _entity_state_int_set(self, name: str, state: int):
         self.ad.set_state(
             name,
             state = state,
-            namespace = 'plaf203')
+            namespace = 'plaf103')
 
 ########################################################################################################################
 
-class Plaf203(adbase.ADBase):
+class Plaf103(adbase.ADBase):
     def initialize(self):
         mqtt_host: str = self.args['mqtt_host']
         mqtt_port: int = self.args['mqtt_port']
@@ -4006,9 +4006,9 @@ class Plaf203(adbase.ADBase):
         self.ad: adapi.ADAPI = self.get_ad_api()
         self.mqtt: mqttapi.Mqtt = self.get_plugin_api("MQTT")
 
-        self.ad.log("Initializing plaf203, serial number {}".format(self.serial_number))
+        self.ad.log("Initializing plaf103, serial number {}".format(self.serial_number))
 
-        self.storage = Storage(self.ad, 'plaf203', self.serial_number)
+        self.storage = Storage(self.ad, 'plaf103', self.serial_number)
         self.storage.initialize()
         self._persistent_state_recover()
 
@@ -4824,4 +4824,4 @@ class Plaf203(adbase.ADBase):
         self.mqtt.mqtt_unsubscribe(full_topic_path, namespace = 'mqtt')
 
     def _topic_base_path_get(self, topic: str):
-        return "plaf203/{}/{}".format(self.serial_number, topic)
+        return "plaf103/{}/{}".format(self.serial_number, topic)
