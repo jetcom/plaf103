@@ -127,9 +127,6 @@ class Commands:
     # The server does NOT respond to this message
     HEARTBEAT: str = 'HEARTBEAT'
 
-    # Sent by the server to the device to (re-) initialize/format the SD card
-    # The device responds to this message
-    INITIALIZE_SD_CARD_SERVICE: str = 'INITIALIZE_SD_CARD_SERVICE'
 
     # Sent by the server to the device to initiate "manual" food output
     # The device responds to this message
@@ -313,33 +310,7 @@ class AgingType(enum.Enum):
     NON_SCHEDULED_ENABLED = 1
     SCHEDULED_ENABLED = 2
 
-class NightVision(enum.Enum):
-    AUTOMATIC = 0
-    OPEN = 1
-    CLOSE = 2
 
-class Resolution(enum.Enum):
-    P720 = 0
-    P1080 = 1
-
-class VideoRecordMode(enum.Enum):
-    CONTINUOUS = 0
-    MOTION_DETECTION = 1
-
-class MotionDetectionSensitivity(enum.Enum):
-    LOW = 0
-    MEDIUM = 1
-    HIGH = 2
-
-class MotionDetectionRange(enum.Enum):
-    SMALL = 0
-    MEDIUM = 1
-    LARGE = 2
-
-class SoundDetectionSensitivity(enum.Enum):
-    LOW = 0
-    MEDIUM = 1
-    HIGH = 2
 
 class PowerMode(enum.Enum):
     USB = 1
@@ -351,33 +322,7 @@ class PowerType(enum.Enum):
     BATTERY_ONLY = 2
     USB_AND_BATTERY = 3
 
-class SdCardState(enum.Enum):
-    NOT_AVAILABLE = 0
-    AVAILABLE = 1
-    INITIALIZING = 2
 
-class SdCardFileSystem(enum.Enum):
-    INVALID = 0
-    FAT32 = 1
-    FAT = 2
-    EXFAT = 3
-    NTFS = 4
-    UNKNOWN = 5
-
-    @staticmethod
-    def from_mqtt_payload_value(value: str) -> SdCardFileSystem:
-        if value == 'FAT32':
-            return SdCardFileSystem.FAT32
-        elif value == 'FAT':
-            return SdCardFileSystem.FAT
-        elif value == 'EXFAT':
-            return SdCardFileSystem.EXFAT
-        elif value == 'NTFS':
-            return SdCardFileSystem.NTFS
-        elif value == 'unknown type':
-            return SdCardFileSystem.UNKNOWN
-        else:
-            return SdCardFileSystem.INVALID
 
 class WifiType(enum.Enum):
     TYPE_0 = 0
@@ -623,7 +568,6 @@ class DeviceStartEventIn:
     timestamp: Timestamp
     success: bool
     pid: str
-    uuid: str
     mac: str
     wpa3: int
     hardware_version: str
@@ -636,7 +580,6 @@ class DeviceStartEventIn:
             timestamp = Timestamp.from_timestamp_epoch_ms(int(payload['ts'])),
             success = payload['success'],
             pid = payload['pid'],
-            uuid = payload['uuid'],
             mac = payload['mac'],
             wpa3 = int(payload['wpa3']),
             hardware_version = payload['hardwareVersion'],
@@ -834,58 +777,6 @@ class AttrPushEventIn:
     auto_change_mode: Optional[bool] = None
     auto_threshold: Optional[int] = None
 
-    # Camera
-    camera_switch: Optional[bool] = None
-    enable_camera: Optional[bool] = None
-    camera_aging_type: Optional[AgingType] = None
-    night_vision: Optional[NightVision] = None
-    resolution: Optional[Resolution] = None
-    camera_start_time_utc: Optional[HourMinTimestamp] = None
-    camera_end_time_utc: Optional[HourMinTimestamp] = None
-
-    # Video recording
-    video_record_switch: Optional[bool] = None
-    enable_video_record: Optional[bool] = None
-    sd_card_state: Optional[SdCardState] = None
-    sd_card_file_system: Optional[SdCardFileSystem] = None
-    sd_card_total_capacity: Optional[int] = None
-    sd_card_used_capacity: Optional[int] = None
-    video_record_mode: Optional[VideoRecordMode] = None
-    video_record_aging_type: Optional[AgingType] = None
-    video_record_start_time_utc: Optional[HourMinTimestamp] = None
-    video_record_end_time_utc: Optional[HourMinTimestamp] = None
-    
-    # Feeding video
-    feeding_video_switch: Optional[bool] = None
-    enable_video_start_feeding_plan: Optional[bool] = None
-    enable_video_after_manual_feeding: Optional[bool] = None
-    before_feeding_plan_time: Optional[int] = None # time in seconds
-    automatic_recording: Optional[int] = None
-    after_manual_feeding_time: Optional[int] = None # time in seconds
-    video_watermark_switch: Optional[bool] = None
-
-    # Cloud video recording
-    cloud_video_record_switch: Optional[bool] = None
-    # Saw these in my message dumps when using the official app but not in the firmware
-    # cloud_video_record_mode: str = None
-    # cloud_video_recording_aging_type: int = None
-
-    # Motion detection
-    motion_detection_switch: Optional[bool] = None
-    enable_motion_detection: Optional[bool] = None
-    motion_detection_aging_type: Optional[AgingType] = None
-    motion_detection_range: Optional[MotionDetectionRange] = None
-    motion_detection_sensitivity: Optional[MotionDetectionSensitivity] = None
-    motion_detection_start_time_utc: Optional[HourMinTimestamp] = None
-    motion_detection_end_time_utc: Optional[HourMinTimestamp] = None
-
-    # Sound detection
-    sound_detection_switch: Optional[bool] = None
-    enable_sound_detection: Optional[bool] = None
-    sound_detection_aging_type: Optional[AgingType] = None
-    sound_detection_sensitivity: Optional[SoundDetectionSensitivity] = None
-    sound_detection_start_time_utc: Optional[HourMinTimestamp] = None
-    sound_detection_end_time_utc: Optional[HourMinTimestamp] = None
 
     @staticmethod
     def from_mqtt_payload(payload: dict) -> AttrPushEventIn:
@@ -942,93 +833,8 @@ class AttrPushEventIn:
         if 'autoThreshold' in payload:
             data = data | { 'auto_threshold': payload['autoThreshold'] }
 
-        if 'cameraSwitch' in payload:
-            data = data | { 'camera_switch': payload['cameraSwitch'] }
-        if 'enableCamera' in payload:
-            data = data | { 'enable_camera': payload['enableCamera'] }
-        if 'cameraAgingType' in payload:
-            data = data | { 'camera_aging_type': AgingType(payload['cameraAgingType']) }
-        if 'nightVision' in payload:
-            data = data | { 'night_vision': NightVision[payload['nightVision']] }
-        if 'resolution' in payload:
-            data = data | { 'resolution': Resolution[payload['resolution']] }
-        if 'cameraStartTimeUtc' in payload:
-            data = data | { 'camera_start_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['cameraStartTimeUtc']) }
-        if 'cameraEndTimeUtc' in payload:
-            data = data | { 'camera_end_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['cameraEndTimeUtc']) }
-
-        if 'videoRecordSwitch' in payload:
-            data = data | { 'video_record_switch': payload['videoRecordSwitch'] }
-        if 'enableVideoRecord' in payload:
-            data = data | { 'enable_video_record': payload['enableVideoRecord'] }
-        if 'sdCardState' in payload:
-            data = data | { 'sd_card_state': SdCardState(payload['sdCardState']) }
-        if 'sdCardFileSystem' in payload:
-            data = data | { 'sd_card_file_system': SdCardFileSystem.from_mqtt_payload_value(payload['sdCardFileSystem']) }
-        if 'sdCardTotalCapacity' in payload:
-            data = data | { 'sd_card_total_capacity': payload['sdCardTotalCapacity'] }
-        if 'sdCardUsedCapacity' in payload:
-            data = data | { 'sd_card_used_capacity': payload['sdCardUsedCapacity'] }
-
-        if 'videoRecordMode' in payload:
-            data = data | { 'video_record_mode': VideoRecordMode[payload['videoRecordMode']] }
-        if 'videoRecordAgingType' in payload:
-            data = data | { 'video_record_aging_type': AgingType(payload['videoRecordAgingType']) }
-        if 'videoRecordStartTimeUtc' in payload:
-            data = data | { 'video_record_start_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['videoRecordStartTimeUtc']) }
-        if 'videoRecordEndTimeUtc' in payload:
-            data = data | { 'video_record_end_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['videoRecordEndTimeUtc']) }
-
-        if 'feedingVideoSwitch' in payload:
-            data = data | { 'feeding_video_switch': payload['feedingVideoSwitch'] }
-        if 'enableVideoStartFeedingPlan' in payload:
-            data = data | { 'enable_video_start_feeding_plan': payload['enableVideoStartFeedingPlan'] }
-        if 'enableVideoAfterManualFeeding' in payload:
-            data = data | { 'enable_video_after_manual_feeding': payload['enableVideoAfterManualFeeding'] }
-        if 'beforeFeedingPlanTime' in payload:
-            data = data | { 'before_feeding_plan_time': payload['beforeFeedingPlanTime'] }
-        if 'automaticRecording' in payload:
-            data = data | { 'automatic_recording': payload['automaticRecording'] }
-        if 'afterManualFeedingTime' in payload:
-            data = data | { 'after_manual_feeding_time': payload['afterManualFeedingTime'] }
-        if 'videoWatermarkSwitch' in payload:
-            data = data | { 'video_watermark_switch': payload['videoWatermarkSwitch'] }
-
-        if 'cloudVideoRecordSwitch' in payload:
-            data = data | { 'cloud_video_record_switch': payload['cloudVideoRecordSwitch'] }
-        # if 'cloudVideoRecordMode' in payload:
-        #     data = data | { 'cloud_video_record_mode': payload['cloudVideoRecordMode'] }
-        # if 'cloudVideoRecordAgingType' in payload:
-        #     data = data | { 'cloud_video_recording_aging_type': payload['cloudVideoRecordAgingType'] }
-
-        if 'motionDetectionSwitch' in payload:
-            data = data | { 'motion_detection_switch': payload['motionDetectionSwitch'] }
-        if 'enableMotionDetection' in payload:
-            data = data | { 'enable_motion_detection': payload['enableMotionDetection'] }
-        if 'motionDetectionAgingType' in payload:
-            data = data | { 'motion_detection_aging_type': AgingType(payload['motionDetectionAgingType']) }
-        if 'motionDetectionRange' in payload:
-            data = data | { 'motion_detection_range': MotionDetectionRange[payload['motionDetectionRange']] }
-        if 'motionDetectionSensitivity' in payload:
-            data = data | { 'motion_detection_sensitivity': MotionDetectionSensitivity[payload['motionDetectionSensitivity']] }
-        if 'motionDetectionStartTimeUtc' in payload:
-            data = data | { 'motion_detection_start_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['motionDetectionStartTimeUtc']) }
-        if 'motionDetectionEndTimeUtc' in payload:
-            data = data | { 'motion_detection_end_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['motionDetectionEndTimeUtc']) }
-
-        if 'soundDetectionSwitch' in payload:
-            data = data | { 'sound_detection_switch': payload['soundDetectionSwitch'] }
-        if 'enableSoundDetection' in payload:
-            data = data | { 'enable_sound_detection': payload['enableSoundDetection'] }
-        if 'soundDetectionAgingType' in payload:
-            data = data | { 'sound_detection_aging_type': AgingType(payload['soundDetectionAgingType']) }
-        if 'soundDetectionSensitivity' in payload:
-            data = data | { 'sound_detection_sensitivity': SoundDetectionSensitivity[payload['soundDetectionSensitivity']] }
-        if 'soundDetectionStartTimeUtc' in payload:
-            data = data | { 'sound_detection_start_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['soundDetectionStartTimeUtc']) }
-        if 'soundDetectionEndTimeUtc' in payload:
-            data = data | { 'sound_detection_end_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['soundDetectionEndTimeUtc']) }
-
+  
+   
         return AttrPushEventIn(**data)
 
 @dataclass
@@ -1080,50 +886,6 @@ class AttrSetServiceOut:
     # Also applies to sound output (volume)
     volume: Optional[PercentageInt] = None
 
-    # Camera
-    camera_switch: Optional[bool] = None
-    camera_aging_type: Optional[AgingType] = None
-    night_vision: Optional[NightVision] = None
-    resolution: Optional[Resolution] = None
-    camera_start_time_utc: Optional[HourMinTimestamp] = None
-    camera_end_time_utc: Optional[HourMinTimestamp] = None
-
-    # Video recording
-    video_record_switch: Optional[bool] = None
-    video_record_mode: Optional[VideoRecordMode] = None
-    video_record_aging_type: Optional[AgingType] = None
-    video_record_start_time_utc: Optional[HourMinTimestamp] = None
-    video_record_end_time_utc: Optional[HourMinTimestamp] = None
-    
-    # Feeding video
-    feeding_video_switch: Optional[bool] = None
-    enable_video_start_feeding_plan: Optional[bool] = None
-    enable_video_after_manual_feeding: Optional[bool] = None
-    before_feeding_plan_time: Optional[int] = None # time in seconds
-    automatic_recording: Optional[int] = None
-    after_manual_feeding_time: Optional[int] = None # time in seconds
-    video_watermark_switch: Optional[bool] = None
-
-    # Cloud video recording
-    cloud_video_record_switch: Optional[bool] = None
-    # Saw these in my message dumps when using the official app but not in the firmware
-    # cloud_video_record_mode: str = None
-    # cloud_video_recording_aging_type: int = None
-
-    # Motion detection
-    motion_detection_switch: Optional[bool] = None
-    motion_detection_aging_type: Optional[AgingType] = None
-    motion_detection_range: Optional[MotionDetectionRange] = None
-    motion_detection_sensitivity: Optional[MotionDetectionSensitivity] = None
-    motion_detection_start_time_utc: Optional[HourMinTimestamp] = None
-    motion_detection_end_time_utc: Optional[HourMinTimestamp] = None
-
-    # Sound detection
-    sound_detection_switch: Optional[bool] = None
-    sound_detection_aging_type: Optional[AgingType] = None
-    sound_detection_sensitivity: Optional[SoundDetectionSensitivity] = None
-    sound_detection_start_time_utc: Optional[HourMinTimestamp] = None
-    sound_detection_end_time_utc: Optional[HourMinTimestamp] = None
 
     # Sound output
     sound_switch: Optional[bool] = None
@@ -1165,82 +927,6 @@ class AttrSetServiceOut:
             payload = payload | { 'audioUrl': self.audio_url }
         if not self.volume == None:
             payload = payload | { 'volume': self.volume.value_get() }
-
-        # Camera
-        if not self.camera_switch == None:
-            payload = payload | { 'cameraSwitch': self.camera_switch }
-        if not self.camera_aging_type == None:
-            payload = payload | { 'cameraAgingType': self.camera_aging_type.value }
-        if not self.night_vision == None:
-            payload = payload | { 'nightVision': self.night_vision.name }
-        if not self.resolution == None:
-            payload = payload | { 'resolution': self.resolution.name }
-        if not self.camera_start_time_utc == None:
-            payload = payload | { 'cameraStartTimeUtc': self.camera_start_time_utc.to_mqtt_payload_value() }
-        if not self.camera_end_time_utc == None:
-            payload = payload | { 'cameraEndTimeUtc': self.camera_end_time_utc.to_mqtt_payload_value() }
-
-        # Video recording
-        if not self.video_record_switch == None:
-            payload = payload | { 'videoRecordSwitch': self.video_record_switch }
-        if not self.video_record_mode == None:
-            payload = payload | { 'videoRecordMode': self.video_record_mode.name }
-        if not self.video_record_aging_type == None:
-            payload = payload | { 'videoRecordAgingType': self.video_record_aging_type.value }
-        if not self.video_record_start_time_utc == None:
-            payload = payload | { 'videoRecordStartTimeUtc': self.video_record_start_time_utc.to_mqtt_payload_value() }
-        if not self.video_record_end_time_utc == None:
-            payload = payload | { 'videoRecordEndTimeUtc': self.video_record_end_time_utc.to_mqtt_payload_value() }
-
-        # Feeding video
-        if not self.feeding_video_switch == None:
-            payload = payload | { 'feedingVideoSwitch': self.feeding_video_switch }
-        if not self.enable_video_start_feeding_plan == None:
-            payload = payload | { 'enableVideoStartFeedingPlan': self.enable_video_start_feeding_plan }
-        if not self.after_manual_feeding_time == None:
-            payload = payload | { 'afterManualFeedingTime': self.after_manual_feeding_time }
-        if not self.before_feeding_plan_time == None:
-            payload = payload | { 'beforeFeedingPlanTime': self.before_feeding_plan_time }
-        if not self.automatic_recording == None:
-            payload = payload | { 'automaticRecording': self.automatic_recording }
-        if not self.enable_video_after_manual_feeding == None:
-            payload = payload | { 'enableVideoAfterManualFeeding': self.enable_video_after_manual_feeding }
-        if not self.video_watermark_switch == None:
-            payload = payload | { 'videoWatermarkSwitch': self.video_watermark_switch }      
-
-        # Cloud video recording
-        if not self.cloud_video_record_switch == None:
-            payload = payload | { 'cloudVideoRecordSwitch': self.cloud_video_record_switch }
-        # if not self.cloud_video_record_mode == None:
-        #     payload = payload | { 'cloudVideoRecordMode': self.cloud_video_record_mode }
-        # if not self.cloud_video_recording_aging_type == None:
-        #     payload = payload | { 'cloudVideoRecordingAgingType': self.cloud_video_recording_aging_type }
-
-        # Motion detection
-        if not self.motion_detection_switch == None:
-            payload = payload | { 'motionDetectionSwitch': self.motion_detection_switch }
-        if not self.motion_detection_aging_type == None:
-            payload = payload | { 'motionDetectionAgingType': self.motion_detection_aging_type.value }
-        if not self.motion_detection_range == None:
-            payload = payload | { 'motionDetectionRange': self.motion_detection_range.name }
-        if not self.motion_detection_sensitivity == None:
-            payload = payload | { 'motionDetectionSensitivity': self.motion_detection_sensitivity.name }
-        if not self.motion_detection_start_time_utc == None:
-            payload = payload | { 'motionDetectionStartTimeUtc': self.motion_detection_start_time_utc.to_mqtt_payload_value() }
-        if not self.motion_detection_end_time_utc == None:
-            payload = payload | { 'motionDetectionEndTimeUtc': self.motion_detection_end_time_utc.to_mqtt_payload_value() }
-
-        # Sound detection
-        if not self.sound_detection_switch == None:
-            payload = payload | { 'soundDetectionSwitch': self.sound_detection_switch }
-        if not self.sound_detection_aging_type == None:
-            payload = payload | { 'soundDetectionAgingType': self.sound_detection_aging_type.value }
-        if not self.sound_detection_sensitivity == None:
-            payload = payload | { 'soundDetectionSensitivity': self.sound_detection_sensitivity.name }
-        if not self.sound_detection_start_time_utc == None:
-            payload = payload | { 'soundDetectionStartTimeUtc': self.sound_detection_start_time_utc.to_mqtt_payload_value() }
-        if not self.sound_detection_end_time_utc == None:
-            payload = payload | { 'soundDetectionEndTimeUtc': self.sound_detection_end_time_utc.to_mqtt_payload_value() }
 
         # Sound output
         if not self.sound_switch == None:
@@ -1649,45 +1335,6 @@ class AttrGetServiceIn:
     auto_change_mode: bool
     auto_threshold: int
 
-    # Camera
-    camera_switch: bool
-    enable_camera: bool
-    camera_aging_type: AgingType
-    resolution: Resolution
-    night_vision: NightVision
-
-    # Video recording
-    video_record_switch: bool
-    enable_video_record: bool
-    sd_card_state: SdCardState
-    video_record_mode: VideoRecordMode
-    video_record_aging_type: AgingType
-
-    # Feeding video
-    feeding_video_switch: bool
-    enable_video_start_feeding_plan: bool
-    enable_video_after_manual_feeding: bool
-    before_feeding_plan_time: int
-    automatic_recording: int
-    after_manual_feeding_time: int
-    video_watermark_switch: bool
-
-    # Cloud video recording
-    cloud_video_record_switch: bool
-
-    # Motion detection
-    motion_detection_switch: bool
-    enable_motion_detection: bool
-    motion_detection_aging_type: AgingType
-    motion_detection_sensitivity: MotionDetectionSensitivity
-    motion_detection_range: MotionDetectionRange
-
-    # Sound detection
-    sound_detection_switch: bool
-    enable_sound_detection: bool
-    sound_detection_aging_type: AgingType
-    sound_detection_sensitivity: SoundDetectionSensitivity
-
     ### Optionals
 
     # Control button lights
@@ -1700,25 +1347,7 @@ class AttrGetServiceIn:
     sound_end_time_utc: Optional[HourMinTimestamp] = None
     sound_times: Optional[int] = None
 
-    # Camera
-    camera_start_time_utc: Optional[HourMinTimestamp] = None
-    camera_end_time_utc: Optional[HourMinTimestamp] = None
-
-    # Video recording
-    sd_card_file_system: Optional[SdCardFileSystem] = None
-    sd_card_total_capacity: Optional[int] = None
-    sd_card_used_capacity: Optional[int] = None
-    video_record_start_time_utc: Optional[HourMinTimestamp] = None
-    video_record_end_time_utc: Optional[HourMinTimestamp] = None
-
-    # Motion detection
-    motion_detection_start_time_utc: Optional[HourMinTimestamp] = None
-    motion_detection_end_time_utc: Optional[HourMinTimestamp] = None
-
-    # Sound detection
-    sound_detection_start_time_utc: Optional[HourMinTimestamp] = None
-    sound_detection_end_time_utc: Optional[HourMinTimestamp] = None
-
+   
     @staticmethod
     def from_mqtt_payload(payload: dict) -> AttrGetServiceIn:
         data = {
@@ -1750,40 +1379,8 @@ class AttrGetServiceIn:
 
             'auto_change_mode': payload['autoChangeMode'],
             'auto_threshold': int(payload['autoThreshold']),
-
-            'camera_switch': payload['cameraSwitch'],
-            'enable_camera': payload['enableCamera'],
-            'camera_aging_type': AgingType(int(payload['cameraAgingType'])),
-            'resolution': Resolution[payload['resolution']],
-            'night_vision': NightVision[payload['nightVision']],
-
-            'video_record_switch': payload['videoRecordSwitch'],
-            'enable_video_record': payload['enableVideoRecord'],
-            'sd_card_state': SdCardState(int(payload['sdCardState'])),
-            'video_record_mode': VideoRecordMode[payload['videoRecordMode']],
-            'video_record_aging_type': AgingType(int(payload['videoRecordAgingType'])),
-
-            'feeding_video_switch': payload['feedingVideoSwitch'],
-            'enable_video_start_feeding_plan': payload['enableVideoStartFeedingPlan'],
-            'enable_video_after_manual_feeding': payload['enableVideoAfterManualFeeding'],
-            'before_feeding_plan_time': int(payload['beforeFeedingPlanTime']),
-            'automatic_recording': int(payload['automaticRecording']),
-            'after_manual_feeding_time': int(payload['afterManualFeedingTime']),
-            'video_watermark_switch': payload['videoWatermarkSwitch'],
-
-            'cloud_video_record_switch': payload['cloudVideoRecordSwitch'],
-
-            'motion_detection_switch': payload['motionDetectionSwitch'],
-            'enable_motion_detection': payload['enableMotionDetection'],
-            'motion_detection_aging_type': AgingType(int(payload['motionDetectionAgingType'])),
-            'motion_detection_sensitivity': MotionDetectionSensitivity[payload['motionDetectionSensitivity']],
-            'motion_detection_range': MotionDetectionRange[payload['motionDetectionRange']],
-
-            'sound_detection_switch': payload['soundDetectionSwitch'],
-            'enable_sound_detection': payload['enableSoundDetection'],
-            'sound_detection_aging_type': AgingType(int(payload['soundDetectionAgingType'])),
-            'sound_detection_sensitivity': SoundDetectionSensitivity[payload['soundDetectionSensitivity']],
-        }
+          
+         }
 
         if 'lightingStartTimeUtc' in payload:
             data = data | { 'lighting_start_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['lightingStartTimeUtc']) }
@@ -1798,32 +1395,6 @@ class AttrGetServiceIn:
             data = data | { 'sound_end_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['soundEndTimeUtc']) }
         if 'soundTimes' in payload:
             data = data | { 'sound_times': int(payload['soundTimes']) }
-
-        if 'cameraStartTimeUtc' in payload:
-            data = data | { 'camera_start_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['cameraStartTimeUtc']) }
-        if 'cameraEndTimeUtc' in payload:
-            data = data | { 'camera_end_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['cameraEndTimeUtc']) }
-
-        if 'sdCardFileSystem' in payload:
-            data = data | { 'sd_card_file_system': SdCardFileSystem.from_mqtt_payload_value(payload['sdCardFileSystem']) }
-        if 'sdCardTotalCapacity' in payload:
-            data = data | { 'sd_card_total_capacity': int(payload['sdCardTotalCapacity']) }
-        if 'sdCardUsedCapacity' in payload:
-            data = data | { 'sd_card_used_capacity': int(payload['sdCardUsedCapacity']) }
-        if 'videoRecordStartTimeUtc' in payload:
-            data = data | { 'video_record_start_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['videoRecordStartTimeUtc']) }
-        if 'videoRecordEndTimeUtc' in payload:
-            data = data | { 'video_record_end_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['videoRecordEndTimeUtc']) }
-
-        if 'motionDetectionStartTimeUtc' in payload:
-            data = data | { 'motion_detection_start_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['motionDetectionStartTimeUtc']) }
-        if 'motionDetectionEndTimeUtc' in payload:
-            data = data | { 'motion_detection_end_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['motionDetectionEndTimeUtc']) }
-
-        if 'soundDetectionStartTimeUtc' in payload:
-            data = data | { 'sound_detection_start_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['soundDetectionStartTimeUtc']) }
-        if 'soundDetectionEndTimeUtc' in payload:
-            data = data | { 'sound_detection_end_time_utc': HourMinTimestamp.from_mqtt_payload_value(payload['soundDetectionEndTimeUtc']) }
 
         return AttrGetServiceIn(**data)
 
@@ -2882,14 +2453,9 @@ class Backend:
         self.device_sd_card_info_callback = None
 
         self.settings_audio_callback = None
-        self.settings_camera_callback = None
-        self.settings_recording_callback = None
-        self.settings_motion_detection_callback = None
-        self.settings_sound_detection_callback = None
-        self.settings_cloud_video_recording_callback = None
+
         self.settings_sound_callback = None
         self.settings_button_lights_callback = None
-        self.settings_feeding_video_callback = None
         self.settings_buttons_auto_lock_callback = None
 
         self.state_power_callback = None
@@ -2933,35 +2499,14 @@ class Backend:
     def device_wifi_info_listen(self, callback):
         self.device_wifi_info_callback = callback
 
-    def device_sd_card_info_listen(self, callback):
-        self.device_sd_card_info_callback = callback
-
     def settings_audio_listen(self, callback):
         self.settings_audio_callback = callback
-
-    def settings_camera_listen(self, callback):
-        self.settings_camera_callback = callback
-
-    def settings_recording_listen(self, callback):
-        self.settings_recording_callback = callback
-
-    def settings_motion_detection_listen(self, callback):
-        self.settings_motion_detection_callback = callback
-
-    def settings_sound_detection_listen(self, callback):
-        self.settings_sound_detection_callback = callback
-
-    def settings_cloud_video_recording_listen(self, callback):
-        self.settings_cloud_video_recording_callback = callback
-
+ 
     def settings_sound_listen(self, callback):
         self.settings_sound_callback = callback
 
     def settings_button_lights_listen(self, callback):
         self.settings_button_lights_callback = callback
-
-    def settings_feeding_video_listen(self, callback):
-        self.settings_feeding_video_callback = callback
 
     def settings_buttons_auto_lock_listen(self, callback):
         self.settings_buttons_auto_lock_callback = callback
@@ -2996,51 +2541,12 @@ class Backend:
 
         self.client.attr_set_service_send(attr_set_service_out)
 
-    def settings_camera(self, enable: bool = None, aging_type: AgingType = None, night_vision: NightVision = None, resolution: Resolution = None):
-        attr_set_service_out = AttrSetServiceOut.create(
-            camera_switch = enable,
-            camera_aging_type = aging_type,
-            night_vision = night_vision,
-            resolution = resolution
-        )
-        self.client.attr_set_service_send(attr_set_service_out)
-
-    def settings_recording(self, enable: bool = None, aging_type: AgingType = None, mode: VideoRecordMode = None):
-        attr_set_service_out = AttrSetServiceOut.create(
-            video_record_switch = enable,
-            video_record_aging_type = aging_type,
-            video_record_mode = mode,
-        )
-        self.client.attr_set_service_send(attr_set_service_out)
 
     def settings_sound(self, enable: bool = None, aging_type: AgingType = None, volume: PercentageInt = None):
         attr_set_service_out = AttrSetServiceOut.create(
             sound_switch = enable,
             sound_aging_type = aging_type,
             volume = volume
-        )
-        self.client.attr_set_service_send(attr_set_service_out)
-
-    def settings_motion_detection(self, enable: bool = None, aging_type: AgingType = None, range_: MotionDetectionRange = None, sensitivity: MotionDetectionSensitivity = None):
-        attr_set_service_out = AttrSetServiceOut.create(
-            motion_detection_switch = enable,
-            motion_detection_aging_type = aging_type,
-            motion_detection_range = range_,
-            motion_detection_sensitivity = sensitivity,
-        )
-        self.client.attr_set_service_send(attr_set_service_out)
-
-    def settings_sound_detection(self, enable: bool = None, aging_type: AgingType = None, sensitivity: SoundDetectionSensitivity = None):
-        attr_set_service_out = AttrSetServiceOut.create(
-            sound_detection_switch = enable,
-            sound_detection_aging_type = aging_type,
-            sound_detection_sensitivity = sensitivity,
-        )
-        self.client.attr_set_service_send(attr_set_service_out)
-
-    def settings_cloud_video_recording(self, enable: bool = None):
-        attr_set_service_out = AttrSetServiceOut.create(
-            cloud_video_record_switch = enable,
         )
         self.client.attr_set_service_send(attr_set_service_out)
 
@@ -3055,18 +2561,6 @@ class Backend:
         attr_set_service_out = AttrSetServiceOut.create(
             auto_change_mode = enable,
             auto_threshold = threshold,
-        )
-        self.client.attr_set_service_send(attr_set_service_out)
-
-    def settings_feeding_video(self, enable: bool = None, video_on_start_feeding_plan: bool = None, video_after_manual_feeding: bool = None, recording_length_before_feeding_plan_time: int = None, recording_length_after_manual_feeding_time: int = None, video_watermark: bool = None, automatic_recording: int = None):
-        attr_set_service_out = AttrSetServiceOut.create(
-            feeding_video_switch = enable,
-            enable_video_start_feeding_plan = video_on_start_feeding_plan,
-            enable_video_after_manual_feeding = video_after_manual_feeding,
-            before_feeding_plan_time = recording_length_before_feeding_plan_time,
-            automatic_recording = automatic_recording,
-            after_manual_feeding_time = recording_length_after_manual_feeding_time,
-            video_watermark_switch = video_watermark,
         )
         self.client.attr_set_service_send(attr_set_service_out)
 
@@ -3271,45 +2765,6 @@ class Backend:
         if not attr_get_service_in.audio_url == None:
             self.settings_audio_file_url = attr_get_service_in.audio_url
 
-        if not self.settings_camera_callback == None:
-            self.settings_camera_callback(
-                feature_enabled = attr_get_service_in.enable_camera,
-                enable = attr_get_service_in.camera_switch,
-                aging_type = attr_get_service_in.camera_aging_type,
-                night_vision = attr_get_service_in.night_vision,
-                resolution = attr_get_service_in.resolution,
-            )
-
-        if not self.settings_recording_callback == None:
-            self.settings_recording_callback(
-                feature_enabled = attr_get_service_in.enable_video_record,
-                enable = attr_get_service_in.video_record_switch,
-                aging_type = attr_get_service_in.video_record_aging_type,
-                mode = attr_get_service_in.video_record_mode
-            )
-
-        if not self.settings_motion_detection_callback == None:
-            self.settings_motion_detection_callback(
-                feature_enabled = attr_get_service_in.enable_motion_detection,
-                enable = attr_get_service_in.motion_detection_switch,
-                aging_type = attr_get_service_in.motion_detection_aging_type,
-                range_ = attr_get_service_in.motion_detection_range,
-                sensitivity = attr_get_service_in.motion_detection_sensitivity, 
-            )
-
-        if not self.settings_sound_detection_callback == None:
-            self.settings_sound_detection_callback(
-                feature_enabled = attr_get_service_in.enable_sound_detection,
-                enable = attr_get_service_in.sound_detection_switch,
-                aging_type = attr_get_service_in.sound_detection_aging_type,
-                sensitivity = attr_get_service_in.sound_detection_sensitivity, 
-            )
-
-        if not self.settings_cloud_video_recording_callback == None:
-            self.settings_cloud_video_recording_callback(
-                enable = attr_get_service_in.cloud_video_record_switch
-            )
-
         if not self.settings_sound_callback == None:
             self.settings_sound_callback(
                 feature_enabled = attr_get_service_in.enable_sound,
@@ -3350,17 +2805,6 @@ class Backend:
                 used_capacity_mb = attr_get_service_in.sd_card_used_capacity,
             )
 
-        if not self.settings_feeding_video_callback == None:
-            self.settings_feeding_video_callback(
-                enable = attr_get_service_in.feeding_video_switch,
-                video_on_start_feeding_plan = attr_get_service_in.enable_video_start_feeding_plan,
-                video_after_manual_feeding = attr_get_service_in.enable_video_after_manual_feeding,
-                recording_length_before_feeding_plan_time = attr_get_service_in.before_feeding_plan_time,
-                recording_length_after_manual_feeding_time = attr_get_service_in.after_manual_feeding_time,
-                video_watermark = attr_get_service_in.video_watermark_switch,
-                automatic_recording = attr_get_service_in.automatic_recording,
-            )
-
         if not self.settings_buttons_auto_lock_callback == None:
             self.settings_buttons_auto_lock_callback(
                 enable = attr_get_service_in.auto_change_mode,
@@ -3382,44 +2826,6 @@ class Backend:
         if not attr_push_event_in.audio_url == None:
             self.settings_audio_file_url = attr_push_event_in.audio_url
 
-        if not self.settings_camera_callback == None:
-            self.settings_camera_callback(
-                feature_enabled = attr_push_event_in.enable_camera,
-                enable = attr_push_event_in.camera_switch,
-                aging_type = attr_push_event_in.camera_aging_type,
-                night_vision = attr_push_event_in.night_vision,
-                resolution = attr_push_event_in.resolution,
-            )
-
-        if not self.settings_recording_callback == None:
-            self.settings_recording_callback(
-                feature_enabled = attr_push_event_in.enable_video_record,
-                enable = attr_push_event_in.video_record_switch,
-                aging_type = attr_push_event_in.video_record_aging_type,
-                mode = attr_push_event_in.video_record_mode,
-            )
-
-        if not self.settings_motion_detection_callback == None:
-            self.settings_motion_detection_callback(
-                feature_enabled = attr_push_event_in.enable_motion_detection,
-                enable = attr_push_event_in.motion_detection_switch,
-                aging_type = attr_push_event_in.motion_detection_aging_type,
-                range_ = attr_push_event_in.motion_detection_range,
-                sensitivity = attr_push_event_in.motion_detection_sensitivity, 
-            )
-
-        if not self.settings_sound_detection_callback == None:
-            self.settings_sound_detection_callback(
-                feature_enabled = attr_push_event_in.enable_sound_detection,
-                enable = attr_push_event_in.sound_detection_switch,
-                aging_type = attr_push_event_in.sound_detection_aging_type,
-                sensitivity = attr_push_event_in.sound_detection_sensitivity, 
-            )
-
-        if not self.settings_cloud_video_recording_callback == None:
-            self.settings_cloud_video_recording_callback(
-                enable = attr_push_event_in.cloud_video_record_switch,
-            )
 
         if not self.settings_sound_callback == None:
             self.settings_sound_callback(
@@ -3440,25 +2846,6 @@ class Backend:
                 battery_level = attr_push_event_in.electric_quantity,
                 mode = attr_push_event_in.power_mode,
                 type_ = attr_push_event_in.power_type,
-            )
-
-        if not self.device_sd_card_info_callback == None:
-            self.device_sd_card_info_callback(
-                state = attr_push_event_in.sd_card_state,
-                file_system = attr_push_event_in.sd_card_file_system,
-                total_capacity_mb = attr_push_event_in.sd_card_total_capacity,
-                used_capacity_mb = attr_push_event_in.sd_card_used_capacity,
-            )
-
-        if not self.settings_feeding_video_callback == None:
-            self.settings_feeding_video_callback(
-                enable = attr_push_event_in.feeding_video_switch,
-                video_on_start_feeding_plan = attr_push_event_in.enable_video_start_feeding_plan,
-                video_after_manual_feeding = attr_push_event_in.enable_video_after_manual_feeding,
-                recording_length_before_feeding_plan_time = attr_push_event_in.before_feeding_plan_time,
-                recording_length_after_manual_feeding_time = attr_push_event_in.after_manual_feeding_time,
-                video_watermark = attr_push_event_in.video_watermark_switch,
-                automatic_recording = attr_push_event_in.automatic_recording,
             )
 
         if not self.settings_buttons_auto_lock_callback == None:
@@ -3627,47 +3014,6 @@ class HomeAssistantDiscoveryMqtt:
         self._ha_switch_config_publish('Feeding audio enable', 'mdi:account-voice', 'audio', 'enable', 'config')
         self._ha_text_config_publish('Feeding audio file url', 'mdi:account-voice', 'audio', 'file_url', 'config')
 
-        self._ha_switch_config_publish('Camera enable', 'mdi:cctv', 'camera', 'enable', 'config')
-        self._ha_binary_sensor_config_publish('Camera feature enabled', 'mdi:cctv', 'camera', 'enable', 'diagnostic')
-        self._ha_select_config_publish('Camera aging type', 'mdi:cctv', 'camera', 'aging_type', [ AgingType.NON_SCHEDULED_ENABLED.name , AgingType.SCHEDULED_ENABLED.name ], 'config')
-        self._ha_select_config_publish('Camera night vision', 'mdi:cctv', 'camera', 'night_vision', [ NightVision.AUTOMATIC.name, NightVision.OPEN.name, NightVision.CLOSE.name ], 'config')
-        self._ha_select_config_publish('Camera resolution', 'mdi:cctv', 'camera', 'resolution', [ Resolution.P720.name, Resolution.P1080.name ], 'config')
-        # TODO support aging type 2 items
-
-        self._ha_switch_config_publish('Recording enable', 'mdi:camera', 'recording', 'enable', 'config')
-        self._ha_binary_sensor_config_publish('Recording feature enabled', 'mdi:camera', 'recording', 'feature_enabled', 'diagnostic')
-        self._ha_select_config_publish('Recording aging type', 'mdi:camera', 'recording', 'aging_type', [ AgingType.NON_SCHEDULED_ENABLED.name , AgingType.SCHEDULED_ENABLED.name ], 'config')
-        self._ha_select_config_publish('Recording mode', 'mdi:camera', 'recording', 'mode', [ VideoRecordMode.CONTINUOUS.name, VideoRecordMode.MOTION_DETECTION.name ], 'config')
-        # TODO support aging type 2 items
-
-        self._ha_sensor_config_publish('SD card state', 'mdi:micro-sd', 'sd_card', 'state')
-        self._ha_sensor_config_publish('SD card file system', 'mdi:micro-sd', 'sd_card', 'file_system')
-        self._ha_sensor_config_publish('SD card total capacity', 'mdi:micro-sd', 'sd_card', 'total_capacity', unit_of_measurement = "MB")
-        self._ha_sensor_config_publish('SD card used capacity', 'mdi:micro-sd', 'sd_card', 'used_capacity', unit_of_measurement = "MB")
-
-        self._ha_switch_config_publish('Feeding video enable', 'mdi:movie', 'feeding_video', 'enable', 'config')
-        self._ha_switch_config_publish('Feeding video on feeding plan trigger enabled', 'mdi:movie', 'feeding_video', 'on_feeding_plan_trigger_enable', 'config')
-        self._ha_switch_config_publish('Feeding video on manual feeding trigger enabled', 'mdi:movie', 'feeding_video', 'on_manual_feeding_trigger_enable', 'config')
-        self._ha_number_box_config_publish('Feeding video time before feeding plan trigger', 'mdi:movie', 'feeding_video', 'time_before_feeding_plan_trigger', 0, 60, 'config')
-        self._ha_number_box_config_publish('Feeding video time after manual feeding trigger', 'mdi:movie', 'feeding_video', 'time_after_manual_feeding_trigger', 0, 60, 'config')
-        self._ha_number_box_config_publish('Feeding video time automatic recording', 'mdi:movie', 'feeding_video', 'time_automatic_recording', 0, 60, 'config')
-        self._ha_switch_config_publish('Feeding video watermark', 'mdi:movie', 'feeding_video', 'watermark', 'config')
-
-        self._ha_switch_config_publish('Cloud video recording enable', 'mdi:cloud', 'cloud_video_recording', 'enable', 'config')
-
-        self._ha_switch_config_publish('Motion detection enable', 'mdi:motion-sensor', 'motion_detection', 'enable', 'config')
-        self._ha_binary_sensor_config_publish('Motion detection feature enabled', 'mdi:motion-sensor', 'motion_detection', 'feature_enabled', 'diagnostic')
-        self._ha_select_config_publish('Motion detection aging type', 'mdi:motion-sensor', 'motion_detection', 'aging_type', [ AgingType.NON_SCHEDULED_ENABLED.name , AgingType.SCHEDULED_ENABLED.name ], 'config')
-        self._ha_select_config_publish('Motion detection range', 'mdi:motion-sensor', 'motion_detection', 'range', [ MotionDetectionRange.SMALL.name, MotionDetectionRange.MEDIUM.name, MotionDetectionRange.LARGE.name ], 'config')
-        self._ha_select_config_publish('Motion detection sensitivity', 'mdi:motion-sensor', 'motion_detection', 'sensitivity', [ MotionDetectionSensitivity.LOW.name, MotionDetectionSensitivity.MEDIUM.name, MotionDetectionSensitivity.HIGH.name ], 'config')
-        # TODO support aging type 2 items
-
-        self._ha_switch_config_publish('Sound detection on/off', 'mdi:bullhorn', 'sound_detection', 'enable', 'config')
-        self._ha_binary_sensor_config_publish('Sound detection feature enabled', 'mdi:bullhorn', 'sound_detection', 'feature_enabled', 'diagnostic')
-        self._ha_select_config_publish('Sound detection aging type', 'mdi:bullhorn', 'sound_detection', 'aging_type', [ AgingType.NON_SCHEDULED_ENABLED.name , AgingType.SCHEDULED_ENABLED.name ], 'config')
-        self._ha_select_config_publish('Sound detection sensitivity', 'mdi:bullhorn', 'sound_detection', 'sensitivity', [ SoundDetectionSensitivity.LOW.name, SoundDetectionSensitivity.MEDIUM.name, SoundDetectionSensitivity.HIGH.name ], 'config')
-        # TODO support aging type 2 items
-
         self._ha_switch_config_publish('Sound enable', 'mdi:speaker', 'sound', 'enable', 'config')
         self._ha_binary_sensor_config_publish('Sound feature enabled', 'mdi:speaker', 'sound', 'feature_enabled', 'diagnostic')
         self._ha_select_config_publish('Sound aging type', 'mdi:speaker', 'sound', 'aging_type', [ AgingType.NON_SCHEDULED_ENABLED.name , AgingType.SCHEDULED_ENABLED.name ], 'config')
@@ -3702,7 +3048,6 @@ class HomeAssistantDiscoveryMqtt:
         self._ha_button_config_publish('Reboot', 'mdi:power', 'device', 'reboot', 'diagnostic')
         self._ha_button_config_publish('Factory reset', 'mdi:factory', 'device', 'factory_reset', 'diagnostic')
         self._ha_button_config_publish('Wifi force reconnect', 'mdi:wifi-cancel', 'device', 'wifi_reconnect', 'diagnostic')
-        self._ha_button_config_publish('SD card format', 'mdi:delete', 'device', 'sd_card_format', 'diagnostic')
 
         self._ha_sensor_config_publish('Food motor state', 'mdi:food', 'food', 'motor_state', entity_category = 'diagnostic')
         self._ha_binary_sensor_config_publish('Food outlet blocked', 'mdi:food', 'food', 'outlet_blocked')
@@ -4045,17 +3390,9 @@ class Plaf103(adbase.ADBase):
 
         self.backend.device_info_listen(self._device_info_cb)
         self.backend.device_wifi_info_listen(self._device_wifi_info_cb)
-        self.backend.device_sd_card_info_listen(self._device_sd_card_info_cb)
 
-        self.backend.settings_audio_listen(self._settings_audio_cb)
-        self.backend.settings_camera_listen(self._settings_camera_cb)
-        self.backend.settings_recording_listen(self._settings_recording_cb)
-        self.backend.settings_motion_detection_listen(self._settings_motion_detection_cb)
-        self.backend.settings_sound_detection_listen(self._settings_sound_detection_cb)
-        self.backend.settings_cloud_video_recording_listen(self._settings_cloud_video_recording_cb)
         self.backend.settings_sound_listen(self._settings_sound_cb)
         self.backend.settings_button_lights_listen(self._settings_button_lights_cb)
-        self.backend.settings_feeding_video_listen(self._settings_feeding_video_cb)
         self.backend.settings_buttons_auto_lock_listen(self._settings_buttons_auto_lock_cb)
 
         self.backend.state_power_listen(self._state_power_cb)
@@ -4078,37 +3415,9 @@ class Plaf103(adbase.ADBase):
         self._mqtt_subscribe('audio/cmd/enable', self._mqtt_cmd_audio_enable_cb)
         self._mqtt_subscribe('audio/cmd/file_url', self._mqtt_cmd_audio_file_url_cb)
 
-        self._mqtt_subscribe('camera/cmd/enable', self._mqtt_cmd_camera_enable_cb)
-        self._mqtt_subscribe('camera/cmd/aging_type', self._mqtt_cmd_camera_aging_type_cb)
-        self._mqtt_subscribe('camera/cmd/night_vision', self._mqtt_cmd_camera_night_vision_cb)
-        self._mqtt_subscribe('camera/cmd/resolution', self._mqtt_cmd_camera_resolution_cb)
-
-        self._mqtt_subscribe('recording/cmd/enable', self._mqtt_cmd_recording_enable_cb)
-        self._mqtt_subscribe('recording/cmd/aging_type', self._mqtt_cmd_recording_aging_type_cb)
-        self._mqtt_subscribe('recording/cmd/mode', self._mqtt_cmd_recording_mode_cb)
-
         self._mqtt_subscribe('sound/cmd/enable', self._mqtt_cmd_sound_enable_cb)
         self._mqtt_subscribe('sound/cmd/aging_type', self._mqtt_cmd_sound_aging_type_cb)
-        self._mqtt_subscribe('sound/cmd/volume', self._mqtt_cmd_sound_volume_cb)
-
-        self._mqtt_subscribe('feeding_video/cmd/enable', self._mqtt_cmd_feeding_video_enable_cb)
-        self._mqtt_subscribe('feeding_video/cmd/on_feeding_plan_trigger_enable', self._mqtt_cmd_feeding_video_on_feeding_plan_trigger_enable_cb)
-        self._mqtt_subscribe('feeding_video/cmd/on_manual_feeding_trigger_enable', self._mqtt_cmd_feeding_video_on_manual_feeding_trigger_enable_cb)
-        self._mqtt_subscribe('feeding_video/cmd/time_before_feeding_plan_trigger', self._mqtt_cmd_feeding_video_time_before_feeding_plan_trigger_cb)
-        self._mqtt_subscribe('feeding_video/cmd/time_after_manual_feeding_trigger', self._mqtt_cmd_feeding_video_time_after_manual_feeding_trigger_cb)
-        self._mqtt_subscribe('feeding_video/cmd/time_automatic_recording', self._mqtt_cmd_feeding_video_time_automatic_recording_cb)
-        self._mqtt_subscribe('feeding_video/cmd/watermark', self._mqtt_cmd_feeding_video_watermark_cb)
-
-        self._mqtt_subscribe('motion_detection/cmd/enable', self._mqtt_cmd_motion_detection_enable_cb)
-        self._mqtt_subscribe('motion_detection/cmd/aging_type', self._mqtt_cmd_motion_detection_aging_type_cb)
-        self._mqtt_subscribe('motion_detection/cmd/range', self._mqtt_cmd_motion_detection_range_cb)
-        self._mqtt_subscribe('motion_detection/cmd/sensitivity', self._mqtt_cmd_motion_detection_sensitivity_cb)
-
-        self._mqtt_subscribe('sound_detection/cmd/enable', self._mqtt_cmd_sound_detection_enable_cb)
-        self._mqtt_subscribe('sound_detection/cmd/aging_type', self._mqtt_cmd_sound_detection_aging_type_cb)
-        self._mqtt_subscribe('sound_detection/cmd/sensitivity', self._mqtt_cmd_sound_detection_sensitivity_cb)
-
-        self._mqtt_subscribe('cloud_video_recording/cmd/enable', self._mqtt_cmd_cloud_video_recording_enable_cb)
+        self._mqtt_subscribe('sound/cmd/volume', self._mqtt_cmd_sound_volume_cb) 
 
         self._mqtt_subscribe('buttons_auto_lock/cmd/enable', self._mqtt_cmd_buttons_auto_lock_enable_cb)
         self._mqtt_subscribe('buttons_auto_lock/cmd/thresold', self._mqtt_cmd_buttons_auto_lock_threshold_cb)
@@ -4229,59 +3538,6 @@ class Plaf103(adbase.ADBase):
         if not resolution == None:
             self._camera_resolution_set(resolution)
 
-    def _settings_recording_cb(self, feature_enabled: bool = None, enable: bool = None, aging_type: AgingType = None, mode: VideoRecordMode = None):
-        self.ad.log("Settings recording: {}, {}, {}, {}".format(feature_enabled, enable, aging_type, mode))
-        
-        if not feature_enabled == None:
-            self._recording_feature_enabled_set(feature_enabled)
-
-        if not enable == None:
-            self._recording_enable_set(enable)
-
-        if not aging_type == None:
-            self._recording_aging_type_set(aging_type)
-
-        if not mode == None:
-            self._recording_mode_set(mode)
-
-    def _settings_motion_detection_cb(self, feature_enabled: bool = None, enable: bool = None, aging_type: AgingType = None, range_: MotionDetectionRange = None, sensitivity: MotionDetectionSensitivity = None):
-        self.ad.log("Settings motion detection: {}, {}, {}, {}, {}".format(feature_enabled, enable, aging_type, range_, sensitivity))
-        
-        if not feature_enabled == None:
-            self._motion_detection_feature_enabled_set(feature_enabled)
-
-        if not enable == None:
-            self._motion_detection_enable_set(enable)
-
-        if not aging_type == None:
-            self._motion_detection_aging_type_set(aging_type)
-
-        if not range_ == None:
-            self._motion_detection_range_set(range_)
-
-        if not sensitivity == None:
-            self._motion_detection_sensitivity_set(sensitivity)
-
-    def _settings_sound_detection_cb(self, feature_enabled: bool = None, enable: bool = None, aging_type: AgingType = None, sensitivity: SoundDetectionSensitivity = None):
-        self.ad.log("Settings sound detection: {}, {}, {}, {}".format(feature_enabled, enable, aging_type, sensitivity))
-        
-        if not feature_enabled == None:
-            self._sound_detection_feature_enabled_set(feature_enabled)
-
-        if not enable == None:
-            self._sound_detection_enable_set(enable)
-
-        if not aging_type == None:
-            self._sound_detection_aging_type_set(aging_type)
-
-        if not sensitivity == None:
-            self._sound_detection_sensitivity_set(sensitivity)
-
-    def _settings_cloud_video_recording_cb(self, enable: bool):
-        self.ad.log("Settings cloud video recording: {}".format(enable))
-        
-        if not enable == None:
-            self._cloud_video_recording_enable_set(enable)
 
     def _settings_sound_cb(self, feature_enabled: bool = None, enable: bool = None, aging_type: AgingType = None, volume: PercentageInt = None):
         self.ad.log("Settings sound: {}, {}, {}, {}".format(feature_enabled, enable, aging_type, volume))
@@ -4310,38 +3566,7 @@ class Plaf103(adbase.ADBase):
         if not aging_type == None:
             self._button_lights_aging_type_set(aging_type)
 
-    def _settings_feeding_video_cb(self, enable: bool = None, video_on_start_feeding_plan: bool = None, video_after_manual_feeding: bool = None, recording_length_before_feeding_plan_time: int = None, recording_length_after_manual_feeding_time: int = None, video_watermark: bool = None, automatic_recording: int = None):
-        self.ad.log("Settings feeding video: {}, {}, {}, {}, {}, {}, {}".format(
-            enable,
-            video_on_start_feeding_plan,
-            video_after_manual_feeding,
-            recording_length_before_feeding_plan_time,
-            recording_length_after_manual_feeding_time,
-            video_watermark,
-            automatic_recording
-        ))
-        
-        if not enable == None:
-            self._feeding_video_enable(enable)
-
-        if not video_on_start_feeding_plan == None:
-            self._feeding_video_on_feeding_plan_trigger_enable(video_on_start_feeding_plan)
-
-        if not video_after_manual_feeding == None:
-            self._feeding_video_on_manual_feeding_trigger_enable(video_after_manual_feeding)
-
-        if not recording_length_before_feeding_plan_time == None:
-            self._feeding_video_time_before_feeding_plan_trigger(recording_length_before_feeding_plan_time)
-
-        if not recording_length_after_manual_feeding_time == None:
-            self._feeding_video_time_after_manual_feeding_trigger(recording_length_after_manual_feeding_time)
-
-        if not automatic_recording == None:
-            self._feeding_video_time_automatic_recording(automatic_recording)
-
-        if not video_watermark == None:
-            self._feeding_video_watermark(video_watermark)
-
+    
     def _settings_buttons_auto_lock_cb(self, enable: bool = None, threshold: int = None):
         self.ad.log("Settings buttons auto lock: {}, {}".format(enable, threshold))
 
@@ -4466,70 +3691,18 @@ class Plaf103(adbase.ADBase):
 
     #########################
 
-    def _camera_feature_enabled_set(self, feature_enabled: bool):
-        self._mqtt_publish_bool('camera/feature_enabled', feature_enabled)
-
-    def _camera_enable_set(self, enable: bool):
-        self._mqtt_publish_bool('camera/enable', enable)
-
-    def _camera_aging_type_set(self, aging_type: AgingType):
-        self._mqtt_publish_str('camera/aging_type', aging_type.name)
-
-    def _camera_night_vision_set(self, night_vision: NightVision):
-        self._mqtt_publish_str('camera/night_vision', night_vision.name)
-
-    def _camera_resolution_set(self, resolution: Resolution):
-        self._mqtt_publish_str('camera/resolution', resolution.name)
 
     #########################
 
-    def _recording_feature_enabled_set(self, feature_enabled: bool):
-        self._mqtt_publish_bool('recording/feature_enabled', feature_enabled)
-
-    def _recording_enable_set(self, enable: bool):
-        self._mqtt_publish_bool('recording/enable', enable)
-
-    def _recording_aging_type_set(self, aging_type: AgingType):
-        self._mqtt_publish_str('recording/aging_type', aging_type.name)
-
-    def _recording_mode_set(self, mode: VideoRecordMode):
-        self._mqtt_publish_str('recording/mode', mode.name)
 
     #########################
 
-    def _motion_detection_feature_enabled_set(self, feature_enabled: bool):
-        self._mqtt_publish_bool('motion_detection/feature_enabled', feature_enabled)
-
-    def _motion_detection_enable_set(self, enable: bool):
-        self._mqtt_publish_bool('motion_detection/enable', enable)
-
-    def _motion_detection_aging_type_set(self, aging_type: AgingType):
-        self._mqtt_publish_str('motion_detection/aging_type', aging_type.name)
-
-    def _motion_detection_range_set(self, range: MotionDetectionRange):
-        self._mqtt_publish_str('motion_detection/range', range.name)
-
-    def _motion_detection_sensitivity_set(self, sensitivity: MotionDetectionSensitivity):
-        self._mqtt_publish_str('motion_detection/sensitivity', sensitivity.name)
 
     #########################
 
-    def _sound_detection_feature_enabled_set(self, feature_enabled: bool):
-        self._mqtt_publish_bool('sound_detection/feature_enabled', feature_enabled)
-
-    def _sound_detection_enable_set(self, enable: bool):
-        self._mqtt_publish_bool('sound_detection/enable', enable)
-
-    def _sound_detection_aging_type_set(self, aging_type: AgingType):
-        self._mqtt_publish_str('sound_detection/aging_type', aging_type.name)
-
-    def _sound_detection_sensitivity_set(self, sensitivity: SoundDetectionSensitivity):
-        self._mqtt_publish_str('sound_detection/sensitivity', sensitivity.name)
 
     #########################
 
-    def _cloud_video_recording_enable_set(self, enable: bool):
-        self._mqtt_publish_bool('cloud_video_recording/enable', enable)
 
     #########################
 
@@ -4565,27 +3738,6 @@ class Plaf103(adbase.ADBase):
         self._mqtt_publish_int('buttons_auto_lock/threshold', threshold)
 
     #########################
-
-    def _feeding_video_enable(self, enable: bool):
-        self._mqtt_publish_bool('feeding_video/enable', enable)
-
-    def _feeding_video_on_feeding_plan_trigger_enable(self, enable: bool):
-        self._mqtt_publish_bool('feeding_video/on_feeding_plan_trigger_enable', enable)
-
-    def _feeding_video_on_manual_feeding_trigger_enable(self, enable: bool):
-        self._mqtt_publish_bool('feeding_video/on_manual_feeding_trigger_enable', enable)
-
-    def _feeding_video_time_before_feeding_plan_trigger(self, time: int):
-        self._mqtt_publish_int('feeding_video/time_before_feeding_plan_trigger', time)
-
-    def _feeding_video_time_after_manual_feeding_trigger(self, time: int):
-        self._mqtt_publish_int('feeding_video/time_after_manual_feeding_trigger', time)
-
-    def _feeding_video_time_automatic_recording(self, time: int):
-        self._mqtt_publish_int('feeding_video/time_automatic_recording', time)
-
-    def _feeding_video_watermark(self, enable: bool):
-        self._mqtt_publish_bool('feeding_video/watermark', enable)
 
     #########################
 
@@ -4681,42 +3833,9 @@ class Plaf103(adbase.ADBase):
 
     #########################
 
-    def _mqtt_cmd_sound_detection_enable_cb(self, eventname: str, data: dict, kwargs):
-        self.backend.settings_sound_detection(enable = self._mqtt_payload_boolean_to_bool(data['payload']))
-
-    def _mqtt_cmd_sound_detection_aging_type_cb(self, eventname: str, data: dict, kwargs):
-        self.backend.settings_sound_detection(aging_type = AgingType[data['payload']])
-
-    def _mqtt_cmd_sound_detection_sensitivity_cb(self, eventname: str, data: dict, kwargs):
-        self.backend.settings_sound_detection(sensitivity = SoundDetectionSensitivity[data['payload']])
-
     #########################
 
-    def _mqtt_cmd_feeding_video_enable_cb(self, eventname: str, data: dict, kwargs):
-        self.backend.settings_feeding_video(enable = self._mqtt_payload_boolean_to_bool(data['payload']))
-
-    def _mqtt_cmd_feeding_video_on_feeding_plan_trigger_enable_cb(self, eventname: str, data: dict, kwargs):
-        self.backend.settings_feeding_video(video_on_start_feeding_plan = self._mqtt_payload_boolean_to_bool(data['payload']))
-
-    def _mqtt_cmd_feeding_video_on_manual_feeding_trigger_enable_cb(self, eventname: str, data: dict, kwargs):
-        self.backend.settings_feeding_video(video_after_manual_feeding = self._mqtt_payload_boolean_to_bool(data['payload']))
-
-    def _mqtt_cmd_feeding_video_time_before_feeding_plan_trigger_cb(self, eventname: str, data: dict, kwargs):
-        self.backend.settings_feeding_video(recording_length_before_feeding_plan_time = int(data['payload']))
-
-    def _mqtt_cmd_feeding_video_time_after_manual_feeding_trigger_cb(self, eventname: str, data: dict, kwargs):
-        self.backend.settings_feeding_video(recording_length_after_manual_feeding_time = int(data['payload']))
-
-    def _mqtt_cmd_feeding_video_time_automatic_recording_cb(self, eventname: str, data: dict, kwargs):
-        self.backend.settings_feeding_video(automatic_recording = int(data['payload']))
-
-    def _mqtt_cmd_feeding_video_watermark_cb(self, eventname: str, data: dict, kwargs):
-        self.backend.settings_feeding_video(video_watermark = self._mqtt_payload_boolean_to_bool(data['payload']))
-
     #########################
-
-    def _mqtt_cmd_cloud_video_recording_enable_cb(self, eventname: str, data: dict, kwargs):
-        self.backend.settings_cloud_video_recording(enable = self._mqtt_payload_boolean_to_bool(data['payload']))
 
     #########################
 
